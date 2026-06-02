@@ -5,20 +5,6 @@ echo ***************************************************************************
 echo.
 :PROMPT
 
-:: Change the project name in the CMakeLists.txt
-for %%I in ("%CD%") do set PROJECT_NAME=%%~nxI
-
-powershell -Command "(Get-Content CMakeLists.txt) -replace '^project\(.*\).*$', 'project(%PROJECT_NAME%) # Project name' | Set-Content CMakeLists.txt"
-
-
-rmdir /s /q build
-mkdir build
-cd build
-cmake -G "Visual Studio 17 2022" ..
-cd ..
-echo
-echo
-
 setlocal enabledelayedexpansion
 
 if not exist "downloads" mkdir "downloads"
@@ -32,7 +18,7 @@ for %%A in (
     for /f "tokens=1,2 delims= " %%B in ("%%A") do (
         set "DOWNLOAD_URL=%%B"
         set "ZIP_FILE=downloads\%%C"
-
+	echo.
         echo Downloading %%C...
         powershell -Command "& {Invoke-WebRequest '!DOWNLOAD_URL!' -OutFile '!ZIP_FILE!'}"
 
@@ -42,6 +28,7 @@ for %%A in (
         )
 
         echo Download completed. Extracting...
+	echo.
 
         :: Use PowerShell for unzip the .zip
         powershell -Command "Expand-Archive -Path '!ZIP_FILE!' -DestinationPath 'downloads' -Force"
@@ -73,7 +60,31 @@ xcopy /E /I /Y "downloads\SDL2_mixer-2.8.1\include\*" "libs\SDL2\include\"
 xcopy /E /I /Y "downloads\SDL2_mixer-2.8.1\lib\x64\*.lib" "libs\SDL2\lib\"
 xcopy /E /I /Y "downloads\SDL2_mixer-2.8.1\lib\x64\*.dll" "libs\SDL2\bin\"
 
+if exist "downloads" (
+    rmdir /s /q "downloads"
+)
+if exist "SDL2" (
+    rmdir /s /q "SDL2"
+)
+
+
+:: Change the project name in the CMakeLists.txt
+for %%I in ("%CD%") do set PROJECT_NAME=%%~nxI
+
+powershell -Command "(Get-Content CMakeLists.txt) -replace '^project\(.*\).*$', 'project(%PROJECT_NAME%) # Project name' | Set-Content CMakeLists.txt"
+
+if exist "build" (
+    rmdir /s /q "build"
+)
+
+mkdir "build"
+
+cd build
+cmake -G "Visual Studio 17 2022" ..
+
+echo.
 echo Your project setup was done perfectly
-rmdir /s /q downloads
+echo.
+
 pause
 :END
